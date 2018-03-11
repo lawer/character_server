@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" />
+  <title>GOT Characters</title>
+</head>
+<body>
+
+<script id="characters_template" type="text/x-handlebars-template">
+  <div class="container">
+    <h1>GoT Characters</h1>
+
+    <a href="#" class="add btn btn-primary">Add</a>
+
+    <table class="table table-striped">
+      <thead class="thead-dark">
+      <tr>
+        <th>Image</th>
+        <th>Name</th>
+        <th>Alive</th>
+        <th>Culture</th>
+        <th>House</th>
+        <th>Actions</th>
+      </tr>
+      </thead>
+
+      <tbody>
+      {{for characters}}
+      <tr>
+        <td class="align-middle">
+          <a data-id={{:id}} class="details" href="#"><img src="{{:image}}" alt="" class="img-fluid"></a>
+        </td>
+        <td class="align-middle">
+          <a data-id={{:id}} class="details" href="#">{{:name}}</a>
+        </td>
+
+        {{if alive=='no'}}
+        <td class="table-danger align-middle">
+          {{:alive}}
+        </td>
+        {{else}}
+        <td class="align-middle text-center">
+          {{:alive}}
+        </td>
+        {{/if}}
+        <td class="align-middle">
+          {{:culture}}
+        </td>
+        <td class="align-middle">
+          {{:house}}
+        </td>
+        <td>
+          <a data-id={{:id}} href="#" class="btn btn-danger delete">Delete</a>
+          <a data-id={{:id}} href="#" class="btn btn-warning modify">Modify</a>
+        </td>
+      </tr>
+      {{/for}}
+      </tbody>
+    </table>
+  </div>
+</script>
+
+<script id="character_template" type="text/x-handlebars-template">
+  <div class="container">
+    <h1>{{:name}}</h1>
+
+    <img src="{{:image}}" alt="">
+
+    <ul>
+      <li>Alive: {{:alive}}</li>
+      <li>Culture: {{:culture}}</li>
+      <li>House: {{:house}}</li>
+    </ul>
+  </div>
+</script>
+
+<script id="add_character_template" type="text/x-handlebars-template">
+  <div class="container">
+    <h1>Add character</h1>
+
+    <form action="">
+      <label for="name">Name</label>
+      <input type="text" name="name" id="name">
+
+      <br>
+      <label for="image">Image</label>
+      <input type="text" name="image" id="image">
+
+      <br>
+
+      <label for="alive">Alive</label>
+      <input type="text" name="alive" id="alive">
+
+      <br>
+
+      <label for="culture">Culture</label>
+      <input type="text" name="culture" id="culture">
+
+      <br>
+
+      <label for="house">House</label>
+      <input type="text" name="house" id="house">
+
+      <br>
+
+      <button type="submit" class="btn btn-primary add-form-submit">
+        Submit
+      </button>
+    </form>
+  </div>
+</script>
+
+<script id="modify_character_template" type="text/x-handlebars-template">
+  <div class="container">
+    <h1>Modify {{:name}}</h1>
+
+    <form action="">
+      <label for="name">Name</label>
+      <input type="text" name="name" id="name"
+             value="{{:name}}">
+
+      <br>
+      <label for="image">Image</label>
+      <input type="text" name="image" id="image"
+             value="{{:image}}">
+
+      <br>
+
+      <label for="alive">Alive</label>
+      <input type="text" name="alive" id="alive"
+             value="{{:alive}}">
+
+      <br>
+
+      <label for="culture">Culture</label>
+      <input type="text" name="culture" id="culture"
+             value="{{:culture}}">
+
+      <br>
+
+      <label for="house">House</label>
+      <input type="text" name="house" id="house"
+             value="{{:house}}">
+
+      <br>
+
+      <button data-id="{{:id}}" type="submit" class="btn btn-primary modify-form-submit">
+        Submit
+      </button>
+    </form>
+  </div>
+</script>
+
+<a class="characters" href="#">Character List</a>
+
+<div id="app"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsrender/0.9.90/jsrender.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-serialize-object/2.5.0/jquery.serialize-object.min.js"></script>
+<script src="//unpkg.com/navigo@6"></script>
+<script>
+
+  function showCharacter(event){
+    event.preventDefault();
+
+    var id = $(this).data("id");
+
+    $.getJSON("api/characters/" + id, function (data) {
+      var html = $("#character_template").render(data);
+
+      $("#app").html(html);
+    });
+  }
+
+  function deleteCharacter(event){
+    event.preventDefault();
+
+    var id = $(this).data("id");
+
+    console.log("Delete " + id);
+
+    $.ajax({
+      url: 'api/characters/' + id,
+      type: 'DELETE'
+    }).then(function(result){
+      showCharacters();
+    });
+  }
+
+  function modifyFormSubmit(event){
+    event.preventDefault();
+
+    var form = $("form");
+
+    var data = form.serializeObject()
+    var button = $("form > button");
+
+    var id = button.data("id");
+
+    $.post("api/characters/" + id, data, function(result){
+      showCharacters();
+    })
+  }
+
+  function modifyCharacter(event){
+    event.preventDefault();
+
+    var id = $(this).data("id");
+
+    $.getJSON("api/characters/" + id, function (data) {
+
+      var html = $("#modify_character_template").render(data);
+
+      $("#app").html(html);
+
+      $(".modify-form-submit").on("click", modifyFormSubmit);
+    });
+  }
+
+  function addFormSubmit(event){
+    event.preventDefault();
+
+    var form = $("form");
+
+    var data = form.serializeObject()
+
+    $.post("api/characters/", data, function(result){
+      showCharacters();
+    })
+  }
+
+  function addCharacter(event){
+    event.preventDefault();
+
+    var html = $("#add_character_template").render();
+
+    $("#app").html(html);
+
+    $(".add-form-submit").on("click", addFormSubmit);
+  }
+
+
+  function showCharacters() {
+    $.getJSON("api/characters/", function (data) {
+      var html = $("#characters_template").render(data);
+
+      $("#app").html(html);
+
+      $(".details").on("click", showCharacter);
+      $(".delete").on("click", deleteCharacter);
+      $(".modify").on("click", modifyCharacter);
+      $(".add").on("click", addCharacter);
+    });
+  }
+
+  $(document).ready(function () {
+    showCharacters();
+
+    $(".characters").on("click", function(event){
+      event.preventDefault();
+
+      showCharacters();
+    })
+  });
+</script>
+</body>
+</html>

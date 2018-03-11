@@ -1,0 +1,59 @@
+{
+  "libros": [
+    {
+      "año": 1994,
+      "titulo": "TCP/IP Illustrated",
+      "autores": [
+        {
+          "apellido": "Stevens",
+          "nombre": "W."
+        }
+      ],
+      "editorial": "Addison-Wesley",
+      "precio": 65.95
+    },
+    {
+      "año": 1992,
+      "titulo": "Advan Programming for Unix environment",
+      "autores": [
+        {
+          "apellido": "Stevens",
+          "nombre": "W."
+        }
+      ],
+      "editorial": "Addison-Wesley",
+      "precio": 65.95
+    },
+    {
+      "año": 2000,
+      "titulo": "Data on the Web",
+      "autor": [
+        {
+          "apellido": "Abiteboul",
+          "nombre": "Serge"
+        },
+        {
+          "apellido": "Buneman",
+          "nombre": "Peter"
+        },
+        {
+          "apellido": "Suciu",
+          "nombre": "Dan"
+        }
+      ],
+      "editorial": "Morgan Kaufmann editorials",
+      "precio": 39.95
+    },
+    {
+      "año": 1999,
+      "titulo": "Economics of Technology for Digital TV",
+      "editor": {
+        "apellido": "Gerbarg",
+        "nombre": "Darcy",
+        "afiliacion": "CITI"
+      },
+      "editorial": "Kluwer Academic editorials",
+      "precio": 129.95
+    }
+  ]
+}
