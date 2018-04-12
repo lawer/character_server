@@ -5,7 +5,9 @@
   <meta name="viewport"
         content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noty/3.1.4/noty.css"/>
+
   <title>GOT Characters</title>
 </head>
 <body>
@@ -14,7 +16,7 @@
   <div class="container">
     <h1>GoT Characters</h1>
 
-    <a href="#" class="add btn btn-primary">Add</a>
+    <a href="#!/characters/add" class="add btn btn-primary">Add</a>
 
     <table class="table table-striped">
       <thead class="thead-dark">
@@ -32,10 +34,10 @@
       {{for characters}}
       <tr>
         <td class="align-middle">
-          <a data-id={{:id}} class="details" href="#"><img src="{{:image}}" alt="" class="img-fluid"></a>
+          <a href="#!/characters/{{:_id}}"><img src="{{:image}}" alt="" class="img-fluid"></a>
         </td>
         <td class="align-middle">
-          <a data-id={{:id}} class="details" href="#">{{:name}}</a>
+          <a href="#!/characters/{{:_id}}">{{:name}}</a>
         </td>
 
         {{if alive=='no'}}
@@ -54,8 +56,8 @@
           {{:house}}
         </td>
         <td>
-          <a data-id={{:id}} href="#" class="btn btn-danger delete">Delete</a>
-          <a data-id={{:id}} href="#" class="btn btn-warning modify">Modify</a>
+          <a href="#!/characters/{{:_id}}/delete" class="btn btn-danger delete">Delete</a>
+          <a href="#!/characters/{{:_id}}/modify" class="btn btn-warning modify">Modify</a>
         </td>
       </tr>
       {{/for}}
@@ -148,14 +150,71 @@
 
       <br>
 
-      <button data-id="{{:id}}" type="submit" class="btn btn-primary modify-form-submit">
+      <button data-id="{{:_id}}" type="submit" class="btn btn-primary modify-form-submit">
         Submit
       </button>
     </form>
   </div>
 </script>
 
-<a class="characters" href="#">Character List</a>
+
+<script id="register_template" type="text/x-handlebars-template">
+  <div class="container">
+    <h1>REgister</h1>
+
+    <form action="">
+      <label for="name">username</label>
+      <input type="text" name="username" id="username">
+      <br>
+
+      <label for="image">password</label>
+      <input type="text" name="password" id="password">
+      <br>
+
+      <button type="submit" class="btn btn-primary register-form-submit">
+        Submit
+      </button>
+    </form>
+  </div>
+</script>
+
+<script id="login_template" type="text/x-handlebars-template">
+  <div class="container">
+    <h1>Login</h1>
+
+    <form action="">
+      <label for="name">username</label>
+      <input type="text" name="username" id="username">
+      <br>
+
+      <label for="image">password</label>
+      <input type="text" name="password" id="password">
+      <br>
+
+      <button type="submit" class="btn btn-primary login-form-submit">
+        Submit
+      </button>
+    </form>
+  </div>
+</script>
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light justify-content-between">
+  <a class="navbar-brand" href="#!/">Characters</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav"
+          aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarNav">
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item">
+        <a class="nav-link" href="#!/register">Register</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#!/login">Login</a>
+      </li>
+    </ul>
+  </div>
+</nav>
 
 <div id="app"></div>
 
@@ -163,36 +222,134 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrender/0.9.90/jsrender.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-serialize-object/2.5.0/jquery.serialize-object.min.js"></script>
 <script src="//unpkg.com/navigo@6"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/noty/3.1.4/noty.min.js"></script>
 <script>
 
-  function showCharacter(event){
-    event.preventDefault();
+  var root = null;
+  var useHash = true; // Defaults to: false
+  var hash = '#!'; // Defaults to: '#'
+  var router = new Navigo(root, useHash, hash);
 
-    var id = $(this).data("id");
+  router
+    .on('/', showCharacters)
+    .on('/register', register)
+    .on('/login', login)
+    .on('/characters/add', addCharacter)
+    .on('/characters/:id', showCharacter)
+    .on('/characters/:id/delete', deleteCharacter)
+    .on('/characters/:id/modify', modifyCharacter)
 
-    $.getJSON("api/characters/" + id, function (data) {
+    .resolve();
+
+  var storage = window.localStorage;
+  var token = storage.getItem("token");
+
+  console.log(token);
+
+  function showCharacter(params) {
+    $.getJSON("api/characters/" + params.id, function (data) {
       var html = $("#character_template").render(data);
 
       $("#app").html(html);
     });
   }
 
-  function deleteCharacter(event){
+  async function registerFormSubmit(event) {
     event.preventDefault();
 
-    var id = $(this).data("id");
+    var form = $("form");
 
-    console.log("Delete " + id);
+    var data = form.serializeObject();
+    console.log(data);
 
-    $.ajax({
-      url: 'api/characters/' + id,
-      type: 'DELETE'
-    }).then(function(result){
-      showCharacters();
+    $.post("api/auth/register/", data, function (result) {
+      console.log(result);
+      if (result.success) {
+        var type = "success";
+      } else {
+        var type = "error"
+      }
+      new Noty({
+        text: result.msg,
+        type: type,
+        layout: 'topCenter',
+        timeout: 3000
+      }).show();
+      router.navigate('/');
+    }).catch(function (error) {
+      console.log(error);
     });
   }
 
-  function modifyFormSubmit(event){
+  function register() {
+    var html = $("#register_template").render();
+
+    $("#app").html(html);
+
+    $(".register-form-submit").on("click", registerFormSubmit);
+  }
+
+  function loginFormSubmit(event) {
+    event.preventDefault();
+
+    var form = $("form");
+
+    var data = form.serializeObject()
+    console.log(data);
+
+    $.post("api/auth/login/", data, function (result) {
+      var type = "success";
+      var text = "Logged in"
+
+      new Noty({
+        text: text,
+        type: type,
+        layout: 'topCenter',
+        timeout: 3000
+      }).show();
+
+      console.log(result);
+
+      storage.setItem("token", result.token);
+
+      router.navigate('/');
+    }).catch(function (error) {
+      var type = "error";
+      var text = "Error logging in"
+
+      new Noty({
+        text: text,
+        type: type,
+        layout: 'topCenter',
+        timeout: 3000
+      }).show();
+
+      console.log(error);
+    })
+  }
+
+  function login() {
+    var html = $("#login_template").render();
+
+    $("#app").html(html);
+
+    $(".login-form-submit").on("click", loginFormSubmit);
+  }
+
+
+  function deleteCharacter(params) {
+    $.ajax({
+      url: 'api/characters/' + params.id,
+      type: 'DELETE',
+      headers: {
+        'Authorization': token,
+      }
+    }).then(function (result) {
+      router.navigate('/');
+    });
+  }
+
+  function modifyFormSubmit(event) {
     event.preventDefault();
 
     var form = $("form");
@@ -202,18 +359,13 @@
 
     var id = button.data("id");
 
-    $.post("api/characters/" + id, data, function(result){
-      showCharacters();
+    $.post("api/characters/" + id, data, function (result) {
+      router.navigate('/');
     })
   }
 
-  function modifyCharacter(event){
-    event.preventDefault();
-
-    var id = $(this).data("id");
-
-    $.getJSON("api/characters/" + id, function (data) {
-
+  function modifyCharacter(params) {
+    $.getJSON("api/characters/" + params.id, function (data) {
       var html = $("#modify_character_template").render(data);
 
       $("#app").html(html);
@@ -222,21 +374,19 @@
     });
   }
 
-  function addFormSubmit(event){
+  function addFormSubmit(event) {
     event.preventDefault();
 
     var form = $("form");
 
     var data = form.serializeObject()
 
-    $.post("api/characters/", data, function(result){
-      showCharacters();
+    $.post("api/characters/", data, function (result) {
+      router.navigate('/');
     })
   }
 
-  function addCharacter(event){
-    event.preventDefault();
-
+  function addCharacter() {
     var html = $("#add_character_template").render();
 
     $("#app").html(html);
@@ -250,23 +400,9 @@
       var html = $("#characters_template").render(data);
 
       $("#app").html(html);
-
-      $(".details").on("click", showCharacter);
-      $(".delete").on("click", deleteCharacter);
-      $(".modify").on("click", modifyCharacter);
-      $(".add").on("click", addCharacter);
     });
   }
 
-  $(document).ready(function () {
-    showCharacters();
-
-    $(".characters").on("click", function(event){
-      event.preventDefault();
-
-      showCharacters();
-    })
-  });
 </script>
 </body>
 </html>

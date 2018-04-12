@@ -6,14 +6,28 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
+    "bcrypt": "^1.0.3",
     "body-parser": "~1.18.2",
     "cookie-parser": "~1.4.3",
     "cors": "^2.8.4",
     "debug": "~2.6.9",
     "express": "~4.15.5",
+    "express-session": "^1.15.6",
     "jade": "~1.11.0",
+    "jsonwebtoken": "^8.2.0",
     "knex": "^0.14.2",
+    "monk": "^6.0.5",
     "morgan": "~1.9.0",
+    "npm": "^5.7.1",
+    "ooth": "^1.2.1",
+    "ooth-local": "^1.4.1",
+    "ooth-mongo": "^1.2.1",
+    "passport": "^0.4.0",
+    "passport-auth0": "^0.6.1",
+    "passport-google": "^0.3.0",
+    "passport-google-oauth": "^1.0.0",
+    "passport-google-oauth20": "^1.0.0",
+    "passport-jwt": "^4.0.0",
     "serve-favicon": "~2.4.5",
     "sqlite3": "^3.1.13"
   }

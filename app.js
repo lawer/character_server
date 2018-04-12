@@ -6,15 +6,34 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var cors = require('cors');
 
-var index = require('./routes/index');
-var users = require('./routes/users');
+var passport = require('passport');
+var JwtStrategy = require('passport-jwt').Strategy;
+var ExtractJwt = require('passport-jwt').ExtractJwt;
+var jwt = require('jsonwebtoken');
 
-var db = require('knex')({
-  client: 'sqlite3',
-  connection: {
-    filename: "./db.db"
-  }
-});
+
+var dbUrl = "mongodb://dbuser:dbuser@ds213759.mlab.com:13759/characters?authMechanism=SCRAM-SHA-1";
+const db = require('monk')(dbUrl);
+
+const characters = db.get('characters');
+const users = db.get('users');
+
+var opts = {};
+opts.jwtFromRequest = ExtractJwt.fromAuthHeaderWithScheme("jwt");
+opts.secretOrKey = "ARRIQUITAN";
+
+passport.use(new JwtStrategy(opts, function (jwt_payload, done) {
+  users.findOne({"_id": jwt_payload._id})
+    .then(function (user) {
+      if (user) {
+        done(null, user);
+      } else {
+        done(null, false);
+      }
+    }).catch(function (error) {
+    console.log("ERROR " + error);
+  });
+}));
 
 
 var app = express();
@@ -38,9 +57,57 @@ app.use('/', index);
 app.use('/users', users);
 */
 
+app.post('/api/auth/register', function (req, res) {
+  var data = req.body;
+
+  if (!data.username || !data.password) {
+    res.json({success: false, msg: 'Please pass username and password.'});
+  } else {
+    users.findOne({username: data.username})
+      .then(function (user) {
+        console.log(user);
+
+        if (!user) {
+          users.insert(data);
+          return res.json({success: true, msg: 'User created.'});
+        } else {
+          return res.json({success: false, msg: 'Username already exists.'});
+        }
+      });
+  }
+});
+
+app.post('/api/auth/login', function (req, res) {
+  var data = req.body;
+
+  users.findOne({username: data.username})
+    .then(function (user) {
+      console.log(user);
+      if (!user) {
+        res.status(401).send({success: false, msg: 'Authentication failed. User not found.'});
+      } else {
+        if (user.password === data.password) {
+          var token = jwt.sign(
+            {
+              "_id": user._id,
+              "username": user.username
+            },
+            opts.secretOrKey
+          );
+          // return the information including token as JSON
+          res.json({success: true, token: 'JWT ' + token});
+        } else {
+          res.status(401).send({success: false, msg: 'Authentication failed. Wrong password.'});
+        }
+      }
+    })
+});
+
+
 app.get('/api/characters', function (req, res) {
-  db.select().from("characters")
+  characters.find({})
     .then(function (data) {
+      console.log(data);
       res.json({characters: data});
     }).catch(function (error) {
     console.log(error);
@@ -50,7 +117,7 @@ app.get('/api/characters', function (req, res) {
 app.post('/api/characters', function (req, res) {
   var data = req.body;
 
-  db.insert(data).into("characters")
+  characters.insert(data)
     .then(function (data) {
       res.json({characters: data});
     }).catch(function (error) {
@@ -59,9 +126,9 @@ app.post('/api/characters', function (req, res) {
 });
 
 app.get('/api/characters/:id', function (req, res) {
-  var id = parseInt(req.params.id);
+  var _id = req.params.id;
 
-  db.select().from("characters").where("id", id)
+  characters.find({"_id": _id})
     .then(function (data) {
       res.json(data);
     }).catch(function (error) {
@@ -71,10 +138,10 @@ app.get('/api/characters/:id', function (req, res) {
 
 
 app.post('/api/characters/:id', function (req, res) {
-  var id = parseInt(req.params.id);
+  var _id = req.params.id;
   var data = req.body;
 
-  db("characters").update(data).where("id", id)
+  characters.update({"_id": _id}, data)
     .then(function (data) {
       res.json(data);
     }).catch(function (error) {
@@ -83,15 +150,24 @@ app.post('/api/characters/:id', function (req, res) {
 });
 
 
-app.delete('/api/characters/:id', function (req, res) {
-  var id = parseInt(req.params.id);
+app.delete('/api/characters/:id', passport.authenticate('jwt', {session: false}), function (req, res) {
+  if (req.user) {
+    console.log(req.user.username)
 
-  db.delete().from("characters").where("id", id)
-    .then(function (data) {
-      res.json(data);
-    }).catch(function (error) {
-    console.log(error);
-  });
+    var _id = req.params.id;
+
+    console.log(_id)
+    characters.remove({_id: _id})
+      .then(function (data) {
+        console.log("ENTRA")
+
+        res.json(data);
+      }).catch(function (error) {
+      console.log("ERROR " + error);
+    });
+  } else {
+    return res.status(403).send({success: false, msg: 'Unauthorized.'});
+  }
 });
 
 app.get('/rss', function (req, res) {
@@ -99,7 +175,7 @@ app.get('/rss', function (req, res) {
     .then(function (data) {
       console.log(data);
       var rss =
-`<?xml version="1.0" encoding="UTF-8" ?>
+        `<?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0">
 
   <channel>
